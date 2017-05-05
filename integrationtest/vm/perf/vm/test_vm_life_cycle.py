@@ -251,6 +251,18 @@ class Expunge_VM_Parall(VM_Operation_Parall):
             if v1 is not None:
                 test_util.test_fail('Fail to expunge VM %s.' % v1.uuid)
 
+def wait_vm_condition(con):
+    vm_num = os.environ.get('ZSTACK_TEST_NUM')
+    if not vm_num:
+        vm_num = 0
+    else:
+        vm_num = int(vm_num)
+    vms = res_ops.query_resource(res_ops.VM_INSTANCE,con)
+    print 'WAITING FOR ZSTACK_TEST_NUM'
+    while vm_num >len(vms):
+        vms = res_ops.query_resource(res_ops.VM_INSTANCE,con)
+        time.sleep(120)
+
 def create_vm(vm):
     try:
         vm.create()
@@ -302,11 +314,11 @@ def Create():
         vm_num -= 1
         thread = threading.Thread(target=create_vm, args=(vm,))
         while threading.active_count() > thread_threshold:
-            time.sleep(1)
+            time.sleep(3)
         thread.start()
 
     while threading.active_count() > 1:
-        time.sleep(0.01)
+        time.sleep(0.09)
 
     cond = res_ops.gen_query_conditions('name', '=', vm_name)
     vms = res_ops.query_resource_count(res_ops.VM_INSTANCE, cond, session_uuid)
@@ -320,40 +332,47 @@ def Create():
 
 def Stop_VM():
     get_vm_con = res_ops.gen_query_conditions('state', '=', "Running")
+    wait_vm_condition(get_vm_con)
     stopvms = VM_Operation_Parall(get_vm_con, "Running")
     stopvms.parall_test_run()
     stopvms.check_operation_result()
 
 def Start_VM():
     get_vm_con = res_ops.gen_query_conditions('state', '=', "Stopped")
+    wait_vm_condition(get_vm_con)
     startvms = Start_VM_Parall(get_vm_con, "Running")
     startvms.parall_test_run()
     startvms.check_operation_result()
 
 def Reboot_VM():
     get_vm_con = res_ops.gen_query_conditions('state', '=', "Running")
+    wait_vm_condition(get_vm_con)
     rebootvms = Reboot_VM_Parall(get_vm_con, "Running")
     rebootvms.parall_test_run()
 
 def Ha_NeverStop_VM():
     get_vm_con = res_ops.gen_query_conditions('state', '=', 'Running')
+    wait_vm_condition(get_vm_con)
     neverstop_vms = HA_Neverstop_VM_Parall(get_vm_con, "Running")
     neverstop_vms.parall_test_run()
     neverstop_vms.check_operation_result()
 
 def Stop_VM_Simple_Scheduler():
     get_vm_con = res_ops.gen_query_conditions('state', '=', "Running")
+    wait_vm_condition(get_vm_con)
     startvms = Stop_VM_Simple_Scheduler_Parall(get_vm_con, "Running")
     startvms.parall_test_run()
     startvms.check_operation_result()
 
 def Cancel_Ha_VM():
     get_vm_con = res_ops.gen_query_conditions('state', '!=', "Destroyed")
+    wait_vm_condition(get_vm_con)
     cancel_ha_vms = Cancel_HA_VM_Parall(get_vm_con, "Running")
     cancel_ha_vms.parall_test_run()
 
 def Start_VM_Simple_Scheduler():
     get_vm_con = res_ops.gen_query_conditions('state', '=', "Stopped")
+    wait_vm_condition(get_vm_con)
     startvms = Start_VM_Simple_Scheduler_Parall(get_vm_con, "Stopped")
     start_date=int(time.time())
     startvms.parall_test_run()
@@ -361,36 +380,42 @@ def Start_VM_Simple_Scheduler():
 
 def Snapshot_VM_Simple_Scheduler():
     get_vm_con = res_ops.gen_query_conditions('type', '=', "UserVm")
+    wait_vm_condition(get_vm_con)
     snapshotvms = Snapshot_VM_Simple_Scheduler_Parall(get_vm_con, "UserVm")
     snapshotvms.parall_test_run()
     snapshotvms.check_operation_result()
 
 def Reboot_VM_Simple_Scheduler():
     get_vm_con = res_ops.gen_query_conditions('state', '=', "Running")
+    wait_vm_condition(get_vm_con)
     rebootvms = Reboot_VM_Simple_Scheduler_Parall(get_vm_con, "Running")
     rebootvms.parall_test_run()
     rebootvms.check_operation_result()
 
 def Force_Stop_VM():
     get_vm_con = res_ops.gen_query_conditions('state', '=', "Running")
+    wait_vm_condition(get_vm_con)
     stopvms = Force_Stop_VM_Parall(get_vm_con, "Running")
     stopvms.parall_test_run()
     stopvms.check_operation_result()
 
 def Destroy_VM():
     get_vm_con = res_ops.gen_query_conditions('state', '!=', "Destroyed")
+    wait_vm_condition(get_vm_con)
     destroyvms = Destroy_VM_Parall(get_vm_con, "Running")
     destroyvms.parall_test_run()
     destroyvms.check_operation_result()
 
 def Recover_VM():
     get_vm_con = res_ops.gen_query_conditions('state', '=', "Destroyed")
+    wait_vm_condition(get_vm_con)
     recovervms = Recover_VM_Parall(get_vm_con, "Destroyed")
     recovervms.parall_test_run()
     recovervms.check_operation_result()
 
 def Expunge_VM():
     get_vm_con = res_ops.gen_query_conditions('state', '=', "Destroyed")
+    wait_vm_condition(get_vm_con)
     expungevms = Expunge_VM_Parall(get_vm_con, "Running")
     expungevms.parall_test_run()
     expungevms.check_operation_result()
@@ -407,39 +432,39 @@ def test():
     lib_set_provision_cpu_rate(20)
     while True:
 	Create()
-        time.sleep(180)
+        time.sleep(240)
         Stop_VM()
-        time.sleep(180)
+        time.sleep(240)
         Start_VM()
-        time.sleep(180)
+        time.sleep(240)
         Reboot_VM()
-        time.sleep(360)
+        time.sleep(480)
         Ha_NeverStop_VM()
-        time.sleep(30)
+        time.sleep(60)
         Stop_VM_Simple_Scheduler()
-        time.sleep(180)
+        time.sleep(240)
         Cancel_Ha_VM()
-        time.sleep(30)
+        time.sleep(60)
         Stop_VM_Simple_Scheduler()
-        time.sleep(180)
+        time.sleep(240)
         Start_VM_Simple_Scheduler()    
-        time.sleep(180)
+        time.sleep(240)
         Reboot_VM_Simple_Scheduler()
-        time.sleep(180)
+        time.sleep(240)
         Snapshot_VM_Simple_Scheduler()
-        time.sleep(30)
+        time.sleep(60)
         Force_Stop_VM()
-        time.sleep(180)
+        time.sleep(240)
         Destroy_VM()
-        time.sleep(180)
+        time.sleep(240)
         Recover_VM()
-        time.sleep(180)
+        time.sleep(240)
         Start_VM()
-        time.sleep(180)
+        time.sleep(240)
         Destroy_VM()
-        time.sleep(180)
+        time.sleep(240)
         Expunge_VM()
-        time.sleep(180)
+        time.sleep(240)
     while True:
         time.sleep(3600)
     
