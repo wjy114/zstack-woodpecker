@@ -37,7 +37,7 @@ def test():
     target_vm_num = 4
 
     host_res = test_lib.lib_get_cpu_memory_capacity(host_uuids = [host.uuid])
-    real_availableMemory = host_res.availableMemory - \
+    real_availableMemory = host_res.totalMemory - \
             sizeunit.get_size(test_lib.lib_get_reserved_memory())
     avail_mem = real_availableMemory * over_provision_rate
     if avail_mem <= 1024*1024*1024:
@@ -48,7 +48,7 @@ def test():
 
     original_rate = test_lib.lib_set_provision_memory_rate(over_provision_rate)
 
-    new_offering_mem = avail_mem / target_vm_num
+    new_offering_mem = ((avail_mem / target_vm_num)-4)
     new_offering = test_lib.lib_create_instance_offering(memorySize = new_offering_mem)
 
     new_offering_uuid = new_offering.uuid
